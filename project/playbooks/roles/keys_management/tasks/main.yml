@@ -1,12 +1,7 @@
 ---
 - name: Отправка приватных ключей пользователей на FTP сервер
   block:
-    - name: Удаление старого rsa_keys.tgz
-      file:
-        path: /root/rsa_keys.tgz
-        state: absent
-
-    - name: Архивирование файлов RSA
+    - name: Архивирование файлов rsa_id
       archive:
         path: /root/rsa_keys/*
         dest: /root/rsa_keys.tgz
