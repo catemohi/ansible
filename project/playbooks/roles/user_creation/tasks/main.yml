@@ -1,0 +1,55 @@
+---
+- name: Добавление новых пользователей
+  block:
+    - name: Создания пользователя
+      user:
+        name: "{{ item }}"
+        shell: /bin/bash
+        createhome: yes
+        groups: "{{ other_groups }}"
+        home: /home/{{ item }}
+        generate_ssh_key: yes
+        state: present
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: item
+
+    - name: Добавление сгенерированного ключа пользователя в authorized_keys
+      copy:
+        remote_src: yes
+        src: "/home/{{ item }}/.ssh/id_rsa.pub"
+        dest: "/home/{{ item }}/.ssh/authorized_keys"
+        owner: "{{ item }}"
+        group: "{{ item }}"
+        mode: '0600'
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: item
+
+    - name: Копирование сгенерированного приватного ключа пользователя
+      copy:
+        remote_src: yes
+        src: "/home/{{ item }}/.ssh/id_rsa"
+        dest: "/root/rsa_keys/{{ item }}_rsa_keys"
+        owner: root
+        group: root
+        mode: '0600'
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: item
+
+    - name: Добавление пользователей в AllowUsers
+      set_fact:
+        allowusers: "{{ allowusers | default('') + ' ' + item }}"
+      when: item not in allowusers_line.stdout
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: item
+
+    - name: Добавление строки в AllowUsers
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^AllowUsers"
+        line: "{{ allowusers }}"
+        insertafter: EOF
+        state: present

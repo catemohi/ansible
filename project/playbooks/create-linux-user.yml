@@ -1,0 +1,12 @@
+---
+- name: Создание пользователей на сервере
+  hosts: zabbix
+  vars:
+    users: [testuser]
+    other_groups: ['adm']
+  roles:
+    - role: preparation_user_creation
+    - role: user_creation
+    - role: keys_management
+    - role: sshd_restart
+  become: true

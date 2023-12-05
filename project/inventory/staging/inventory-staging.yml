@@ -1,0 +1,6 @@
+all:
+  hosts:
+    zabbix:
+      ansible_port: 22
+      ansible_host: 192.168.50.98
+      ansible_user: catemohi

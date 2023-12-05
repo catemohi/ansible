@@ -1,0 +1,17 @@
+---
+- name: Подготовительный блок
+  block:
+    - name: Создание дериктории /root/rsa_keys
+      file:
+        path: /root/rsa_keys
+        state: directory
+        mode: '0600'
+
+    - name: Получение списка AllowUsers из sshd_config
+      shell: grep -E "^AllowUsers" /etc/ssh/sshd_config || echo "AllowUsers"
+      register: allowusers_line
+      ignore_errors: true
+
+    - name: Подготовка строки AllowUsers
+      set_fact:
+        allowusers: "{{ allowusers_line.stdout }}"
