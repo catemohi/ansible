@@ -1,9 +1,25 @@
 ---
 - name: Создание пользователей на сервере
   hosts: zabbix
-  vars:
-    users: [testuser]
-    other_groups: ['adm']
+  vars_prompt:
+    - name: users
+      prompt: Введите через пробел именя пользователей
+      private: false
+    - name: other_groups
+      prompt: Введите через пробел группы в которые надо добавить пользователей
+      private: false
+    - name: transfer_keys_to_ftp
+      prompt: "Отправлять приватные ключи на ftp сервер? (Y/n)"
+      private: false
+    - name: ftp_username
+      prompt: "Введите логин от ftp ( если требуется отправить ключи )"
+      private: true
+    - name: ftp_password
+      prompt: "Введите пароль от ftp ( если требуется отправить ключи )"
+      private: true
+    - name: fetch_to_host
+      prompt: "Скопировать приватные ключи на вашу хост машину (файл появится в дериктории запуска playbook )? (Y/n)"
+      private: false
   roles:
     - role: preparation_user_creation
     - role: user_creation

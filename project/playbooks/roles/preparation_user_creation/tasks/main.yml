@@ -15,3 +15,19 @@
     - name: Подготовка строки AllowUsers
       set_fact:
         allowusers: "{{ allowusers_line.stdout }}"
+
+    - name: Преобразования вводы user в список 
+      set_fact:
+          users: "{{ users.split() }}"
+
+    - name: Преобразования вводы other_groups в список 
+      set_fact:
+          other_groups: "{{ other_groups.split() }}"
+
+    - name: Преобразования ввод transfer_keys_to_ftp в булево значение
+      set_fact: 
+        transfer_keys_to_ftp: "{{ true if transfer_keys_to_ftp in ['Y', 'y', ''] else false }}"
+
+    - name: Преобразования ввод fetch_to_host в булево значение
+      set_fact: 
+        fetch_to_host: "{{ true if fetch_to_host in ['Y', 'y', ''] else false }}"
