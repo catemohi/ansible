@@ -1,0 +1,6 @@
+all:
+  hosts:
+    zabbix:
+      ansible_port: 22
+      ansible_host: CHANGE ME
+      ansible_user: CHANGE ME
