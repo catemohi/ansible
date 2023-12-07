@@ -1,0 +1,154 @@
+---
+- name: Упражнение конфигурации сервера
+  hosts: CHANGE ME
+  become: true
+  tasks:
+    - name: Установка репозитория Docker в Ubuntu
+      vars:
+        name_repository: https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }}
+        gpg_filepath: /etc/apt/keyrings/
+        release_stability: stable
+
+      block:
+        - name: Удаление gpg ключ если он существует
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          with_items:
+            - /usr/share/keyrings/docker.gpg
+            - /usr/share/keyrings/docker.gpg_armored
+            - "{{ gpg_filepath }}docker.gpg_armored"
+            - "{{ gpg_filepath }}docker.gpg"
+        - name: Сохранение контрольной суммы
+          ansible.builtin.shell: "curl -sL {{ name_repository }}/gpg | sha256sum"
+          register: docker_checksum
+
+        - name: Добавление ключа репозитория в Ubuntu
+          ansible.builtin.get_url:
+            url: "{{ name_repository }}/gpg"
+            dest: "{{ gpg_filepath }}docker.gpg_armored"
+            checksum: "sha256:{{ docker_checksum.stdout }}"
+
+        - name: De-Armor Docker GPG ключ
+          ansible.builtin.shell: "gpg --dearmor <  {{ gpg_filepath }}docker.gpg_armored > {{ gpg_filepath }}docker.gpg"
+          args:
+            creates: "{{ gpg_filepath }}docker.gpg"
+
+        - name: Удаление gpg_armored ключ
+          ansible.builtin.file:
+            path: "{{ gpg_filepath }}docker.gpg_armored"
+            state: absent
+
+        - name: Установка репозитория Docker в Ubuntu
+          vars:
+            architecture_map:
+              "x86_64": "amd64"
+              "aarch64": "arm64"
+              "aarch": "arm64"
+              "armhf": "armhf"
+              "armv7l": "armhf"
+          ansible.builtin.apt_repository:
+            filename: docker
+            repo: >
+              deb [arch={{ architecture_map[ansible_architecture] }} signed-by={{ gpg_filepath }}docker.gpg]
+              {{ name_repository }} {{ ansible_distribution_release }} {{ release_stability }}
+            state: present
+            update_cache: true
+
+    - name: Установка Docker в Ubuntu
+      vars:
+        # Пользователи которых необходимо добавить в группу Docker
+        user_in_docker_group:
+          - catemohi
+          - testuser
+      block:
+        - name: Удаление старых версий
+          ansible.builtin.apt:
+            name:
+              - docker.io
+              - docker-compose
+              - docker-compose-v2
+              - docker-doc
+              - podman-docker
+            state: absent
+
+        - name: Обновление зависимостей apt и установка дополнительных пакетов в Ubuntu
+          ansible.builtin.apt:
+            name:
+              - ca-certificates
+              - curl
+              - gnupg
+            state: present
+            update_cache: true
+            cache_valid_time: 86400
+
+        - name: Установка Docker в Ubuntu
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            update_cache: true
+            state: present
+
+        - name: Проверка существование группы Docker
+          ansible.builtin.group:
+            name: docker
+            state: present
+
+        - name: Запуск и включение docker daemon
+          ansible.builtin.service:
+            name: docker
+            state: started
+            enabled: true
+
+        - name: Запуск и включение containerd daemon
+          ansible.builtin.service:
+            name: containerd
+            state: started
+            enabled: true
+
+        - name: Перезапуск сервиса Docker
+          ansible.builtin.service:
+            name: docker
+            state: restarted
+
+        - name: Добавление пользователь в группу Docker
+          ansible.builtin.user:
+            name: "{{ item }}"
+            groups: docker
+            append: true
+          loop: "{{ user_in_docker_group }}"
+          loop_control:
+            loop_var: item
+
+    - name: Установка Docker-compose
+      vars:
+        docker_compose_url: https://github.com/docker/compose/releases/download/
+
+      block:
+        - name: Получение актуального тега docker-composr
+          ansible.builtin.uri:
+            url: https://api.github.com/repos/docker/compose/releases/latest
+            body_format: json
+          register: page
+
+        - name: Установка Docker-compose
+          ansible.builtin.get_url:
+            url: "{{ docker_compose_url }}{{ page.json.tag_name }}/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}"
+            dest: /usr/local/bin/docker-compose
+            mode: "0755"
+
+        - name: Создание символьной ссылки
+          ansible.builtin.file:
+            src: /usr/local/bin/docker-compose
+            dest: /usr/bin/docker-compose
+            state: link
+
+    - name: Перезагрузка сервера
+
+      block:
+        - name: Перезагрузка сервера
+          ansible.builtin.reboot:
