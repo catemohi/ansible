@@ -1,6 +1,6 @@
 ---
 - name: Упражнение конфигурации сервера
-  hosts: CHANGE ME
+  hosts: node-main
   become: true
   tasks:
     - name: Установка репозитория Docker в Ubuntu
@@ -10,6 +10,11 @@
         release_stability: stable
 
       block:
+        - name: "Проверка существавия дериктории {{ gpg_filepath }}"
+          ansible.builtin.file:
+            path: "{{ gpg_filepath }}"
+            state: directory
+            mode: "0755"
         - name: Удаление gpg ключ если он существует
           ansible.builtin.file:
             path: "{{ item }}"
