@@ -1,0 +1,36 @@
+---
+- hosts: demo
+  tasks:
+    - name: Create private key
+      openssl_privatekey:
+        path: "{{ playbook_dir }}/ca.key"
+
+    - name: Create CSR
+      openssl_csr:
+        subject:
+          C: US
+          ST: VA
+          L: SomeCity
+          O: MyCompany
+          OU: MyDivision
+          CN: myregistry.home.local
+        privatekey_path: "{{ playbook_dir }}/ca.key"
+        path: "{{ playbook_dir }}/ca.csr"
+        
+    - name: Create self-signed certificate
+      openssl_certificate:
+        provider: selfsigned
+        path: "{{ playbook_dir }}/ca.crt"
+        csr_path: "{{ playbook_dir }}/ca.csr"
+        privatekey_path: "{{ playbook_dir }}/ca.key"
+        selfsigned_digest: sha256
+        selfsigned_version: 3
+        mode: 0644
+        state: present
+        signature_algorithms: 
+         - sha256WithRSAEncryption
+        subject_alt_name: ["DNS:myregistry.home.local"]
+        key_usage:
+          - keyEncipherment
+          - dataEncipherment
+        extended_key_usage: ["serverAuth"]
