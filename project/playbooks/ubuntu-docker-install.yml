@@ -1,6 +1,6 @@
 ---
 - name: Упражнение конфигурации сервера
-  hosts: node-main
+  hosts: CHENGE ME
   become: true
   tasks:
     - name: Установка репозитория Docker в Ubuntu
@@ -33,6 +33,7 @@
             url: "{{ name_repository }}/gpg"
             dest: "{{ gpg_filepath }}docker.gpg_armored"
             checksum: "sha256:{{ docker_checksum.stdout }}"
+            mode: "0644"
 
         - name: De-Armor Docker GPG ключ
           ansible.builtin.shell: "gpg --dearmor <  {{ gpg_filepath }}docker.gpg_armored > {{ gpg_filepath }}docker.gpg"

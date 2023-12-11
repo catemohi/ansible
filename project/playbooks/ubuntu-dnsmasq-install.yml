@@ -1,0 +1,57 @@
+---
+- name: Настройка dnsmasq на Ubuntu
+  hosts: CHANGE ME
+  become: true
+  vars:
+    dnsmasq_config_file: /etc/dnsmasq.conf
+    dns_listen_address: 127.0.0.1
+    upstream_dns_address_1: 8.8.8.8
+    upstream_dns_address_2: 8.8.4.4
+    domain_local: home.local
+  tasks:
+    # Задача: Установить dnsmasq
+    - name: Установка dnsmasq
+      ansible.builtin.apt:
+        name: dnsmasq
+        state: present
+        update_cache: true
+
+    # Задача: Настройка dnsmasq
+    - name: Настройка dnsmasq
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.conf
+        content: |
+          domain-needed
+          bogus-priv
+          domain={{ domain_local }}
+          expand-hosts
+          local=/{{ domain_local }}/
+          listen-address={{ dns_listen_address }}
+          server={{ upstream_dns_address_1 }}
+          server={{ upstream_dns_address_2 }}
+        mode: '0644'
+
+    # Задача: Отключить systemd-resolved
+    - name: Отключение systemd-resolved
+      ansible.builtin.service:
+        name: systemd-resolved
+        state: stopped
+        enabled: true
+      register: service_stopped
+
+    # Если systemd-resolved был успешно остановлен, установить DNS в dnsmasq server
+    - name: Установка DNS в dnsmasq server
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: |
+          nameserver {{ dns_listen_address }}
+        force: true
+        mode: '0644'
+      when: service_stopped is successful
+
+    # Задача: Убедиться, что dnsmasq работает
+    - name: Проверка работы dnsmasq
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+        enabled: true

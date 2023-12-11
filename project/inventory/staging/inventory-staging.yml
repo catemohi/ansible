@@ -8,3 +8,12 @@ all:
       ansible_port: 22
       ansible_host: 127.0.0.1
       ansible_user: catemohi
+
+nodes:
+  hosts:
+    node1:
+      ansible_user: root
+      ansible_host: 192.168.50.81
+    node2:
+      ansible_user: root
+      ansible_host: 192.168.50.82

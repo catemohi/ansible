@@ -1,0 +1,38 @@
+---
+- hosts: CHANGE ME
+  become: true
+  vars:
+    dns_ip: "127.0.0.1"
+    dns_domain: "example.com"
+  tasks:
+    - name: Запрашиваем статус службы systemd-resolved.
+      ansible.builtin.shell: systemctl is-active --quiet systemd-resolved && echo "Running" || echo "Not running"
+      register: service_status
+      changed_when: service_status.stdout != ""
+
+    - name: Конфигурация если в системе используеться systemd-resolved
+      when: systemd_resolved.stdout == "active"
+      block:
+        - name: Редактирование /etc/systemd/resolved.conf оно решено активно.
+          ansible.builtin.lineinfile:
+            path: /etc/systemd/resolved.conf
+            regexp: '^#?{{ item.key }}='
+            line: '{{ item.key }}={{ item.value }}'
+          loop:
+            - { key: 'DNS', value: '{{ dns_ip }}' }
+            - { key: 'Domains', value: '{{ dns_domain }}' }
+          notify: restart systemd-resolved
+          when: service_status.stdout == "Running"
+
+        - name: Restart systemd-resolved
+          ansible.builtin.service:
+            name: systemd-resolved
+            state: restarted
+
+    - name: Изменение /etc/resolv.conf оно решено не активно.
+      when: service_status.stdout == "Not running"
+      ansible.builtin.lineinfile:
+        path: /etc/resolv.conf
+        regexp: '^nameserver'
+        line: 'nameserver {{ dns_ip }}'
+...
