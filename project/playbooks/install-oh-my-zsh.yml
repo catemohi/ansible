@@ -2,7 +2,6 @@
 - hosts: demo
   become: true
   vars:
-    oh_my_zsh_theme: "duellj"
     workflow_user: "catemohi"
     workflow_user_group: "adm sudo"
   roles:
@@ -14,18 +13,6 @@
         fetch_to_host: "y"
     - role: user_creation
     - role: keys_management
-    - role: gantsign.oh-my-zsh
-      users:
-        - username: "{{ workflow_user }}"
-          oh_my_zsh:
-            theme: "{{ oh_my_zsh_theme }}"
-            plugins:
-            - git
-        - username: "root"
-          oh_my_zsh:
-            theme: "{{ oh_my_zsh_theme }}"
-            plugins:
-            - git
 
   tasks:
     - name: Обновление репозиториев APT
@@ -68,22 +55,22 @@
             name: "{{ item }}"
             shell: "/bin/zsh"
           loop: "{{ bash_users.stdout_lines }}"
-
-        # - name: Установить oh-my-zsh для пользователя catemohi
-        #   become_user: "{{ item }}"
-        #   shell: sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
-        #   loop:
-        #     - "root"
-        #     - "{{ workflow_user }}"
-
-        # - name: Change oh-my-zsh theme to duellj
-        #   ansible.builtin.lineinfile:
-        #     path: /home/{{ item }}/.zshrc
-        #     regexp: '^ZSH_THEME=".*"$'
-        #     line: 'ZSH_THEME="{{ oh_my_zsh_theme }}"'
-        #   become_user: "{{ item }}"
-        #   loop:
-        #     - "root"
-        #     - "{{ workflow_user }}"
-
-
+---
+- hosts: demo
+  become: true
+  vars:
+    oh_my_zsh_theme: "duellj"
+    workflow_user: "catemohi"
+  roles:
+    - role: gantsign.oh-my-zsh
+      users:
+        - username: "{{ workflow_user }}"
+          oh_my_zsh:
+            theme: "{{ oh_my_zsh_theme }}"
+            plugins:
+            - git
+        - username: "root"
+          oh_my_zsh:
+            theme: "{{ oh_my_zsh_theme }}"
+            plugins:
+            - git
