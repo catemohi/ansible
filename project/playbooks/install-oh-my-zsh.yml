@@ -55,7 +55,7 @@
             name: "{{ item }}"
             shell: "/bin/zsh"
           loop: "{{ bash_users.stdout_lines }}"
----
+
 - hosts: demo
   become: true
   vars:
