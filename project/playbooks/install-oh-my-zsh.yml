@@ -45,7 +45,7 @@
           - traceroute
           - python3
           - python3-pip
-          - venv
+          - python3-venv
           - htop
           - openssh-server
           - vim
