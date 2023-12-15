@@ -14,14 +14,34 @@
       loop_control:
         loop_var: item
 
-    - name: Добавление сгенерированного ключа пользователя в authorized_keys
-      copy:
-        remote_src: yes
-        src: "/home/{{ item }}/.ssh/id_rsa.pub"
-        dest: "/home/{{ item }}/.ssh/authorized_keys"
+    # - name: Добавление сгенерированного ключа пользователя в authorized_keys
+    #   copy:
+    #     remote_src: yes
+    #     src: "/home/{{ item }}/.ssh/id_rsa.pub"
+    #     dest: "/home/{{ item }}/.ssh/authorized_keys"
+    #     owner: "{{ item }}"
+    #     group: "{{ item }}"
+    #     mode: '0600'
+    #   loop: "{{ users }}"
+    #   loop_control:
+    #     loop_var: item
+    - name: Создание/проверка файла authorized_keys
+      ansible.builtin.file:
+        path: '/home/{{ item }}/.ssh/authorized_keys'
         owner: "{{ item }}"
         group: "{{ item }}"
-        mode: '0600'
+        mode: "0600"
+        state: file
+      loop: "{{ users }}"
+      loop_control:
+        loop_var: item
+
+    - name: Добавление сгенерированного ключа пользователя в authorized_keys
+      ansible.builtin.blockinfile:
+        path: '/home/{{ item }}/.ssh/authorized_keys'
+        block: "{{ lookup('file', '/home/{{ item }}/.ssh/id_rsa.pub') }}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        create: yes
       loop: "{{ users }}"
       loop_control:
         loop_var: item
