@@ -4,7 +4,7 @@
   vars:
     oh_my_zsh_theme: "duellj"
     workflow_user: "catemohi"
-    workflow_user_group: "adm"
+    workflow_user_group: "adm sudo"
   roles:
     - role: preparation_user_creation
       vars:
@@ -18,25 +18,25 @@
       users:
         - username: "{{ workflow_user }}"
           oh_my_zsh:
-          theme: "{{ oh_my_zsh_theme }}"
-          plugins:
-          - git
+            theme: "{{ oh_my_zsh_theme }}"
+            plugins:
+            - git
         - username: "root"
           oh_my_zsh:
-          theme: "{{ oh_my_zsh_theme }}"
-          plugins:
-          - git
+            theme: "{{ oh_my_zsh_theme }}"
+            plugins:
+            - git
 
   tasks:
     - name: Обновление репозиториев APT
-      apt:
+      ansible.builtin.apt:
         update_cache: yes
         cache_valid_time: 3600
     - name: Апгрейд всех пакетов системы
-      apt:
+      ansible.builtin.apt:
         upgrade: dist
     - name: Установка всех необходимых пакетов
-      apt:
+      ansible.builtin.apt:
         name:
           - wget
           - git
@@ -49,21 +49,22 @@
           - htop
           - openssh-server
           - vim
+          - ansible
 
     - name: Установка oh-my-zsh
       block:
         - name: Установка оболочки zsh
-          apt:
+          ansible.builtin.apt:
             name: zsh
             state: present
 
         - name: Получить всех пользователей у которых /bin/bash shell
-          shell: "getent passwd | awk -F: '$NF~/bash/{print $1}'"
+          ansible.builtin.shell: "getent passwd | awk -F: '$NF~/bash/{print $1}'"
           changed_when: false
           register: bash_users
 
         - name: Change shell to /bin/zsh for bash users
-          user: 
+          ansible.builtin.user: 
             name: "{{ item }}"
             shell: "/bin/zsh"
           loop: "{{ bash_users.stdout_lines }}"

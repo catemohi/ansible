@@ -2,13 +2,13 @@
 - name: Упражнение конфигурации сервера
   hosts: CHENGE ME
   become: true
+  vars:
+    docker_group_users: []
+    name_repository: https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }}
+    gpg_filepath: /etc/apt/keyrings/
+    release_stability: stable
   tasks:
     - name: Установка репозитория Docker в Ubuntu
-      vars:
-        name_repository: https://download.docker.com/{{ ansible_system | lower }}/{{ ansible_distribution | lower }}
-        gpg_filepath: /etc/apt/keyrings/
-        release_stability: stable
-
       block:
         - name: "Проверка существавия дериктории {{ gpg_filepath }}"
           ansible.builtin.file:
@@ -62,11 +62,6 @@
             update_cache: true
 
     - name: Установка Docker в Ubuntu
-      vars:
-        # Пользователи которых необходимо добавить в группу Docker
-        user_in_docker_group:
-          - catemohi
-          - testuser
       block:
         - name: Удаление старых версий
           ansible.builtin.apt:
@@ -126,7 +121,7 @@
             name: "{{ item }}"
             groups: docker
             append: true
-          loop: "{{ user_in_docker_group }}"
+          loop: "{{ docker_group_users }}"
           loop_control:
             loop_var: item
 
@@ -152,9 +147,3 @@
             src: /usr/local/bin/docker-compose
             dest: /usr/bin/docker-compose
             state: link
-
-    - name: Перезагрузка сервера
-
-      block:
-        - name: Перезагрузка сервера
-          ansible.builtin.reboot:
