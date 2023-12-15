@@ -1,0 +1,77 @@
+---
+- hosts: demo
+  become: true
+  vars:
+    oh_my_zsh_theme: "duellj"
+    workflow_user: "catemohi"
+    workflow_user_group: "adm"
+  roles:
+    - role: preparation_user_creation
+      vars:
+        users: "{{ workflow_user }}"
+        other_groups: "{{ workflow_user_group }}"
+        transfer_keys_to_ftp: "n"
+        fetch_to_host: "y"
+    - role: user_creation
+    - role: keys_management
+    - role: sshd_restart
+
+  tasks:
+    - name: Обновление репозиториев APT
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    - name: Апгрейд всех пакетов системы
+      apt:
+        upgrade: dist
+    - name: Установка всех необходимых пакетов
+      apt:
+        name:
+          - wget
+          - git
+          - net-tools
+          - curl
+          - traceroute
+          - python3
+          - python3-pip
+          - venv
+          - htop
+          - openssh-server
+          - vim
+
+    - name: Установка oh-my-zsh
+      block:
+        - name: Установка оболочки zsh
+          apt:
+            name: zsh
+            state: present
+
+        - name: Получить всех пользователей у которых /bin/bash shell
+          shell: "getent passwd | awk -F: '$NF~/bash/{print $1}'"
+          changed_when: false
+          register: bash_users
+
+        - name: Change shell to /bin/zsh for bash users
+          user: 
+            name: "{{ item }}"
+            shell: "/bin/zsh"
+          loop: "{{ bash_users.stdout_lines }}"
+
+        - name: Установить oh-my-zsh для пользователя catemohi
+          become_user: "{{ item }}"
+          shell: sh -c "$(wget https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O -)"
+          loop:
+            - "root"
+            - "{{ workflow_user }}"
+
+        - name: Change oh-my-zsh theme to duellj
+          ansible.builtin.lineinfile:
+            path: /home/{{ item }}/.zshrc
+            regexp: '^ZSH_THEME=".*"$'
+            line: 'ZSH_THEME="{{ oh_my_zsh_theme }}"'
+          become_user: "{{ item }}"
+          loop:
+            - "root"
+            - "{{ workflow_user }}"
+
+
